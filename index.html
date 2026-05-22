@@ -32,6 +32,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Yatra+One&display=swap" rel="stylesheet">
+<noscript><style>
+  .rv,.rite.rv,.rite.rv .shot,.rite.rv .rite-no,.rite.rv .body > *,
+  .three.rv .cell,.steps.rv .step,.vstable.rv .vsrow,.ransom.rv .price{
+    opacity:1 !important;translate:none !important;scale:none !important;clip-path:none !important;
+  }
+  .hero-inner > *{animation:none !important}
+</style></noscript>
 <style>
   :root{
     --ink:#0a0706;
@@ -403,18 +410,18 @@
   .rite.s12 .body{display:grid;grid-template-columns:1fr 1.8fr;gap:30px;align-items:center}
   @media(max-width:680px){.rite.s12 .body{grid-template-columns:1fr}}
   /* card scroll-reveal */
-  .rite.rv{opacity:0;translate:0 0;clip-path:inset(0 0 100% 0);
-    transition:opacity .45s ease, clip-path .9s cubic-bezier(.16,.8,.24,1)}
-  .rite.rv.in{opacity:1;clip-path:inset(0 0 0 0)}
-  .rite.rv .shot{scale:1.22}
+  .rite.rv{opacity:0;translate:0 52px;
+    transition:opacity .6s ease, translate .8s cubic-bezier(.2,.75,.25,1)}
+  .rite.rv.in{opacity:1;translate:0 0}
+  .rite.rv .shot{scale:1.2}
   .rite.rv.in .shot{scale:1}
   .rite.rv .rite-no{translate:-140% 0}
   .rite.rv.in .rite-no{translate:0 0}
   .rite.rv .body > *:not(.go){opacity:0;translate:0 24px;transition:opacity .5s, translate .5s}
   .rite.rv.in .body > *:not(.go){opacity:1;translate:0 0}
-  .rite.rv.in .body > *:nth-child(1){transition-delay:.3s}
-  .rite.rv.in .body > *:nth-child(2){transition-delay:.4s}
-  .rite.rv.in .body > *:nth-child(3){transition-delay:.5s}
+  .rite.rv.in .body > *:nth-child(1){transition-delay:.22s}
+  .rite.rv.in .body > *:nth-child(2){transition-delay:.32s}
+  .rite.rv.in .body > *:nth-child(3){transition-delay:.42s}
 
   /* ===== PROCEDURE ===== */
   .proc{position:relative}
@@ -1130,20 +1137,38 @@
     }
   })();
 
-  // scroll-reveal with sibling stagger
+  // scroll-reveal — IntersectionObserver + robust rect fallback
   (function(){
-    const io = new IntersectionObserver((ents)=>{
-      ents.forEach(en=>{
-        if(!en.isIntersecting) return;
-        const el = en.target;
-        let idx = 0, p = el.previousElementSibling;
-        while(p){ if(p.classList.contains('rv')) idx++; p = p.previousElementSibling; }
-        el.style.transitionDelay = Math.min(idx,7)*90 + 'ms';
-        el.classList.add('in');
-        io.unobserve(el);
-      });
-    }, {threshold:.12, rootMargin:'0px 0px -7% 0px'});
-    document.querySelectorAll('.rv').forEach(el=>io.observe(el));
+    const items = [].slice.call(document.querySelectorAll('.rv'));
+    function reveal(el){
+      if(el.classList.contains('in')) return;
+      let idx = 0, p = el.previousElementSibling;
+      while(p){ if(p.classList && p.classList.contains('rv')) idx++; p = p.previousElementSibling; }
+      el.style.transitionDelay = Math.min(idx,7)*85 + 'ms';
+      el.classList.add('in');
+    }
+    function check(){
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+      for(let i=0;i<items.length;i++){
+        const el = items[i];
+        if(el.classList.contains('in')) continue;
+        const r = el.getBoundingClientRect();
+        if(r.top < vh*0.9 && r.bottom > 0) reveal(el);
+      }
+    }
+    if('IntersectionObserver' in window){
+      const io = new IntersectionObserver((ents)=>{
+        ents.forEach(en=>{ if(en.isIntersecting){ reveal(en.target); io.unobserve(en.target); } });
+      }, {threshold:0, rootMargin:'0px 0px -8% 0px'});
+      items.forEach(el=>io.observe(el));
+    }
+    // fallback so nothing ever stays hidden
+    window.addEventListener('scroll', check, {passive:true});
+    window.addEventListener('resize', check, {passive:true});
+    window.addEventListener('load', check);
+    check();
+    setTimeout(check, 600);
+    setTimeout(check, 2200);
   })();
 
   // "enter the rite" affordance on each ritual card
